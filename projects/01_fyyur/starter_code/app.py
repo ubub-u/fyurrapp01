@@ -12,6 +12,9 @@ import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
+from flask_migrate import Migrate
+import sys
+
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -21,6 +24,8 @@ moment = Moment(app)
 app.config.from_object('config')
 db = SQLAlchemy(app)
 
+migrate = Migrate(app, db)
+
 # TODO: connect to a local postgresql database
 
 #----------------------------------------------------------------------------#
@@ -28,7 +33,7 @@ db = SQLAlchemy(app)
 #----------------------------------------------------------------------------#
 
 class Venue(db.Model):
-    __tablename__ = 'Venue'
+    __tablename__ = 'venue'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -36,13 +41,17 @@ class Venue(db.Model):
     state = db.Column(db.String(120))
     address = db.Column(db.String(120))
     phone = db.Column(db.String(120))
+    genre = db.Column(db.String)
     image_link = db.Column(db.String(500))
+    website_link = db.Column(db.String)
     facebook_link = db.Column(db.String(120))
+    isTalent = db.Column(db.Boolean)
+    description = db.Column(db.String)
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 class Artist(db.Model):
-    __tablename__ = 'Artist'
+    __tablename__ = 'artist'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -52,11 +61,15 @@ class Artist(db.Model):
     genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    website_link = db.Column(db.String)
+    isLooking = db.Column(db.Boolean)
+    description = db.Column(db.String)
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
+# db.create_all()
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -108,7 +121,7 @@ def venues():
       "num_upcoming_shows": 0,
     }]
   }]
-  return render_template('pages/venues.html', areas=data);
+  return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -415,11 +428,26 @@ def create_artist_submission():
   # called upon submitting the new artist listing form
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
+  form = ArtistForm()
+  artist = Artist(name=form.name.data)
+  artist.city = form.city.data
+  artist.state = form.state.data
+  artist.phone = form.phone.data
+  artist.genres = form.genres.data
+  artist.image_link = form.image_link.data
+  artist.facebook_link = form.facebook_link.data
+  artist.website_link = form.website_link.data
+  artist.isLooking = form.seeking_venue.data
+  artist.description = form.seeking_description.data
+  db.session.add(artist)
+  db.session.commit()
+  db.session.close()
+  
 
   # on successful db insert, flash success
   flash('Artist ' + request.form['name'] + ' was successfully listed!')
   # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+  e.g., flash('An error occurred. Artist ' + form.data.name + ' could not be listed.')
   return render_template('pages/home.html')
 
 
@@ -519,3 +547,6 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
 '''
+
+if __name__ == '__main__':
+  app.run(debug=True)
